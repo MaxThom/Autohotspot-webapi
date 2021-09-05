@@ -1,12 +1,9 @@
 import time 
-import werkzeug
-
-from flask import Flask, request, jsonify
-
 import threading
 from queue import PriorityQueue
+from flask import Flask, request, jsonify
 
-from hotspot import hotspot_bp
+from hotspot.hotspot import hotspot_bp
 import animation as anim
 
 
@@ -30,7 +27,7 @@ class Main:
 
     def main(self):
         self.th_animation.start()
-        self.app.run(host='0.0.0.0', port=81)
+        self.app.run(host='0.0.0.0', port=80)
 
         
 

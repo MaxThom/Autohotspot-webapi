@@ -1,47 +1,38 @@
-import time
+import time 
+import werkzeug
 
-from rpi_ws281x import Color, PixelStrip, ws
+from flask import Flask, request, jsonify
+
+import threading
+from queue import PriorityQueue
+
+from hotspot import hotspot_bp
+import animation as anim
 
 
-# LED strip configuration:
-LED_COUNT = 64         # Number of LED pixels.
-LED_PIN = 18           # GPIO pin connected to the pixels (must support PWM!).
-LED_FREQ_HZ = 800000   # LED signal frequency in hertz (usually 800khz)
-LED_DMA = 10           # DMA channel to use for generating signal (try 10)
-LED_BRIGHTNESS = 255   # Set to 0 for darkest and 255 for brightest
-LED_INVERT = False     # True to invert the signal (when using NPN transistor level shift)
-LED_CHANNEL = 0
-LED_STRIP = ws.SK6812_STRIP_RGBW
-# LED_STRIP = ws.SK6812W_STRIP
+
+#app.logger.debug('This is a DEBUG message')
+#app.logger.info('This is an INFO message')
+#app.logger.warning('This is a WARNING message')
+#app.logger.error('This is an ERROR message')
 
 
 class Main:
-    def __init__(self):
-        print("Born wold !")     
+    def __init__(self):        
+        print("Born wold !")
+        self.app = Flask(__name__)
+        self.app.register_blueprint(hotspot_bp, url_prefix='/')
+
+        self.th_animation = threading.Thread(target=anim.init_animation, args=(self.app.logger,))
     
     def __del__(self):
         print("Goodbye wold !")
 
     def main(self):
-        # Create NeoPixel object with appropriate configuration.
-        strip = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL, LED_STRIP)
-        # Intialize the library (must be called once before other functions).
-        strip.begin()
+        self.th_animation.start()
+        self.app.run(host='0.0.0.0', port=81)
 
-        print('Press Ctrl-C to quit.')
-        while True:
-            # Color wipe animations.
-            self.colorWipe(strip, Color(255, 0, 0))  # Red wipe
-            self.colorWipe(strip, Color(0, 255, 0))  # Blue wipe
-            self.colorWipe(strip, Color(0, 0, 255))  # Green wipe
-            self.colorWipe(strip, Color(0, 0, 0, 255))  # White wipe
-    
-    def colorWipe(self, strip, color, wait_ms=50):
-        """Wipe color across display a pixel at a time."""
-        for i in range(strip.numPixels()):
-            strip.setPixelColor(i, color)
-            strip.show()
-            time.sleep(wait_ms / 1000.0)
+        
 
 if __name__ == '__main__':
     main = Main()

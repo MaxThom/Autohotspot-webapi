@@ -28,34 +28,35 @@ def api_get():
 def command_add_wifi(json):
   print("-> Adding wifi")
   #autohotspot-setup
-  process = subprocess.Popen(["sh", "./hotspot/Autohotspot/test.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
-  #print(process.stdout.read())
-  #result = process.communicate("5")[0]
-  #print(result)
-  process.stdin.write("5\n")
+  process = subprocess.Popen(["sudo /bin/bash ./hotspot/Autohotspot/force_hotspot_wifi.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
   result, err = process.communicate()
-  #process.stdin.write("1\n")
-  process.stdin.close()
   print(err)
   print(result)
-  #print(process.stdout.read())
-  
-  #while True:
-  #  output = process.stdout.readline()
-  #  if output:
-  #  	print(output.strip())
-  #  result = process.poll()
-  #  if result is not None:
-  #      break
     
   print("-> Wifi added !")
   
 
 def command_hotspot_ssid(json):
   print("-> Setting hotspot ssid and password")
+  command = f"sudo /bin/bash ./hotspot/Autohotspot/hotspot_ssid.sh {json['ssid']} {json['password']}"
+  print(command)
+  process = subprocess.Popen([command], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+  result, err = process.communicate()
+  
+  print(err)
+  print(result)
+
+  print("-> Hotspot ssid and password set")
 
 def command_force(json):
   print("-> Forcing hotspot or wifi")
+
+  process = subprocess.Popen(["sudo /bin/bash ./hotspot/Autohotspot/force_hotspot_wifi.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+  result, err = process.communicate()
+  print(err)
+  print(result)
+
+  print("-> Hotspot or wifi forced")
 
 def command_install_ahs_eth(json):
   print("-> Installing Auto Hotspot with internet")

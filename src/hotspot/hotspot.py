@@ -17,7 +17,7 @@ def api_get():
     print(data)
     print(data["command"])
     print(data["ssid"])
-    print(data["password"])
+    print(data["psk"])
     
     commandAction[data["command"]](data)
     
@@ -27,18 +27,76 @@ def api_get():
 ### https://geekflare.com/python-run-bash/
 def command_add_wifi(json):
   print("-> Adding wifi")
-  #autohotspot-setup
-  process = subprocess.Popen(["sudo /bin/bash ./hotspot/Autohotspot/force_hotspot_wifi.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
-  result, err = process.communicate()
-  print(err)
-  print(result)
+  
+  # Read file
+  # If one ssid equal the input, change the password
+  # Else add a new one
+
+  networks = []
+  with open("/etc/wpa_supplicant/wpa_supplicant.conf", "r") as f:
+    in_lines = f.readlines()  
+
+  print(in_lines)
+
+  # Discover networks
+  out_lines = []
+  networks = []
+  i = 0
+  isInside = False
+  for line in in_lines:
+    if "network={" == line.strip().replace(" ", ""):
+      networks.append({})
+      isInside = True
+    elif "}" == line.strip().replace(" ", ""):
+      i += 1
+      isInside = False
+    elif isInside:      
+      key_value = line.strip().split("=")
+      networks[i][key_value[0]] = key_value[1]
+    else:
+      out_lines.append(line)
+
+  # Update password or create new
+  isFound = False
+  for network in networks:
+    if network["ssid"] == f"\"{json['ssid']}\"":
+      network["psk"] = f"\"{json['psk']}\""
+      isFound = True
+      break
+  if not isFound:
+    networks.append({
+      'ssid': f"\"{json['ssid']}\"",
+      'psk': f"\"{json['psk']}\"",
+      'key_mgmt': "WPA-PSK"
+    })
+
+  # Generate file
+  for network in networks:
+    out_lines.append("network={\n")
+    for key, value in network.items():
+      out_lines.append(f"    {key}={value}\n")      
+    out_lines.append("}\n\n")
+
+  # Write to files
+  with open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w') as f:
+    for line in out_lines:
+      f.write(line)
+
+
+  #for network in networks:
+  #  print(network)
+  print(out_lines)
+
+  for line in out_lines:
+    print(line)
     
+
   print("-> Wifi added !")
   
 
 def command_hotspot_ssid(json):
   print("-> Setting hotspot ssid and password")
-  command = f"sudo /bin/bash ./hotspot/Autohotspot/hotspot_ssid.sh {json['ssid']} {json['password']}"
+  command = f"sudo /bin/bash ./hotspot/Autohotspot/hotspot_ssid.sh {json['ssid']} {json['psk']}"
   print(command)
   process = subprocess.Popen([command], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
   result, err = process.communicate()

@@ -1,6 +1,7 @@
 
 from flask import Blueprint, request, jsonify, render_template
 import hotspot.constants as constants
+import hotspot.utils as utils
 import subprocess
 
 hotspot_bp = Blueprint('hotspot', __name__)
@@ -13,108 +14,83 @@ def get():
 
 @hotspot_bp.route('/api/hotspot', methods=['GET'])
 def api_get():
+  rtn = {}
+  try:
     data = request.get_json()
-    print(data)
-    print(data["command"])
-    print(data["ssid"])
-    print(data["psk"])
-    
-    commandAction[data["command"]](data)
-    
-    return jsonify(request.get_json())
+    print(data)    
+    rtn["result"], rtn["err"] = commandAction[data["command"]](data)
+  except Exception as e: 
+    print(e)
+    rtn["result"] = None
+    rtn["err"] = e
 
+  return jsonify(rtn)
 
-### https://geekflare.com/python-run-bash/
 def command_add_wifi(json):
   print("-> Adding wifi")
-  
-  # Read file
-  # If one ssid equal the input, change the password
-  # Else add a new one
 
-  networks = []
-  with open("/etc/wpa_supplicant/wpa_supplicant.conf", "r") as f:
-    in_lines = f.readlines()  
+  if "ssid" not in json or not json["ssid"]:
+    return None, "Missing parameter 'ssid' with string value."
+  if "psk" not in json or not json["psk"]:
+    return None, "Missing parameter 'psk' with string value."
+  if len(json["psk"]) < constants.WIFI_PSK_LENGTH:
+    return None, f"Password must be at least {constants.WIFI_PSK_LENGTH} characters."
 
-  print(in_lines)
+  # Read WPA Supplicant
+  with open(constants.WPA_SUPPLICANT, "r") as f:
+    in_lines = f.readlines()
 
   # Discover networks
-  out_lines = []
-  networks = []
-  i = 0
-  isInside = False
-  for line in in_lines:
-    if "network={" == line.strip().replace(" ", ""):
-      networks.append({})
-      isInside = True
-    elif "}" == line.strip().replace(" ", ""):
-      i += 1
-      isInside = False
-    elif isInside:      
-      key_value = line.strip().split("=")
-      networks[i][key_value[0]] = key_value[1]
-    else:
-      out_lines.append(line)
+  networks, out_lines = utils.read_networks_in_wpa_supplicant(in_lines)
 
-  # Update password or create new
-  isFound = False
-  for network in networks:
-    if network["ssid"] == f"\"{json['ssid']}\"":
-      network["psk"] = f"\"{json['psk']}\""
-      isFound = True
-      break
-  if not isFound:
-    networks.append({
-      'ssid': f"\"{json['ssid']}\"",
-      'psk': f"\"{json['psk']}\"",
-      'key_mgmt': "WPA-PSK"
-    })
+  # Update password or add new network
+  networks = utils.update_add_network(networks, json)
 
-  # Generate file
-  for network in networks:
-    out_lines.append("network={\n")
-    for key, value in network.items():
-      out_lines.append(f"    {key}={value}\n")      
-    out_lines.append("}\n\n")
+  # Generate WPA Supplicant
+  out_lines = utils.generate_wpa_supplicant(networks, out_lines)
 
   # Write to files
-  with open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w') as f:
+  with open(constants.WPA_SUPPLICANT, 'w') as f:
     for line in out_lines:
       f.write(line)
-
-
-  #for network in networks:
-  #  print(network)
-  print(out_lines)
-
+   
+  print("> wpa_supplicant.conf")
   for line in out_lines:
-    print(line)
-    
+    print(line)    
 
   print("-> Wifi added !")
-  
+  return networks, None
+
+def command_display_networks(json):
+  print("-> Adding wifi") 
+
+  # Read WPA Supplicant
+  with open(constants.WPA_SUPPLICANT, "r") as f:
+    in_lines = f.readlines()
+
+  # Discover networks
+  networks, out_lines = utils.read_networks_in_wpa_supplicant(in_lines)
+
+  return networks, None
 
 def command_hotspot_ssid(json):
   print("-> Setting hotspot ssid and password")
-  command = f"sudo /bin/bash ./hotspot/Autohotspot/hotspot_ssid.sh {json['ssid']} {json['psk']}"
-  print(command)
-  process = subprocess.Popen([command], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
-  result, err = process.communicate()
-  
-  print(err)
-  print(result)
+  if "ssid" not in json or not json["ssid"]:
+    return None, "Missing parameter 'ssid' with string value."
+  if "psk" not in json or not json["psk"]:
+    return None, "Missing parameter 'psk' with string value."
+  if len(json["psk"]) < constants.WIFI_PSK_LENGTH:
+    return None, f"Password must be at least {constants.WIFI_PSK_LENGTH} characters."
 
+  result, err = execute_script(f"{constants.AHP_HOTSPOT_SSID_PATH} {json['ssid']} {json['psk']}")
   print("-> Hotspot ssid and password set")
+  return result, err
 
 def command_force(json):
-  print("-> Forcing hotspot or wifi")
-
-  process = subprocess.Popen(["sudo /bin/bash ./hotspot/Autohotspot/force_hotspot_wifi.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
-  result, err = process.communicate()
-  print(err)
-  print(result)
-
+  print("-> Forcing hotspot or wifi")  
+  result, err = execute_script(f"{consants.AHP_FORCE_HS_WIFI_PATH}")
   print("-> Hotspot or wifi forced")
+  return result, err
 
 def command_install_ahs_eth(json):
   print("-> Installing Auto Hotspot with internet")
@@ -129,11 +105,12 @@ def command_uninstall_ahs(json):
   print("-> Uninstalling Auto Hostspot")
 
 commandAction = {
-      constants.COMMAND_ADD_WIFI: command_add_wifi,
-      constants.COMMAND_HOTSPOT_SSID: command_hotspot_ssid,
-      constants.COMMAND_FORCE: command_force,
-      constants.COMMAND_INSTALL_AHS_ETH: command_install_ahs_eth,
-      constants.COMMAND_INSTALL_AHS_NO_ETH: command_install_ahs_no_eth,
-      constants.COMMAND_INSTALL_HS_ETH: command_install_hs_eth,
-      constants.COMMAND_UNINSTALL_AHS: command_uninstall_ahs,
-  }
+    constants.COMMAND_ADD_WIFI: command_add_wifi,
+    constants.COMMAND_DISPLAY_NETWORKS: command_display_networks,
+    constants.COMMAND_HOTSPOT_SSID: command_hotspot_ssid,
+    constants.COMMAND_FORCE: command_force,
+    constants.COMMAND_INSTALL_AHS_ETH: command_install_ahs_eth,
+    constants.COMMAND_INSTALL_AHS_NO_ETH: command_install_ahs_no_eth,
+    constants.COMMAND_INSTALL_HS_ETH: command_install_hs_eth,
+    constants.COMMAND_UNINSTALL_AHS: command_uninstall_ahs,
+}

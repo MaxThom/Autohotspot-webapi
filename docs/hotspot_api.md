@@ -38,6 +38,12 @@ The controller offers only one endpoint to make different actions. Simply send j
     "command": "force_hs_wifi"
 }
 ```
+6. Display the connected network
+```json
+{
+    "command": "display_current_network"
+}
+```
 
 #
 ## AutoHotspot

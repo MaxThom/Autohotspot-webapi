@@ -3,14 +3,10 @@ from flask import Blueprint, request, jsonify, render_template
 import hotspot.constants as constants
 import hotspot.utils as utils
 import os.path
+import subprocess
 
 hotspot_bp = Blueprint('hotspot', __name__)
 
-
-@hotspot_bp.route('/')
-def get():
-    hotspot = {'status': 'WIFI'}
-    return render_template('hotspot.html',hotspot=hotspot)
 
 @hotspot_bp.route('/api/hotspot', methods=['GET'])
 def api_get():
@@ -116,6 +112,21 @@ def command_force(json):
   print("-> Hotspot or wifi forced")
   return result, err
 
+def command_display_current_network(json):
+  print("-> Display current network")  
+  result = subprocess.run(["iwgetid"], capture_output=True, text=True)
+  print("stdout:", result.stdout)
+  print("stderr:", result.stderr)
+
+  iw = ""
+  if not result.stdout:
+    iw = "hotspot"
+  else:
+    iw = result.stdout.split(":")[1].strip().replace("\n", "").replace("\"", "")
+
+  print("-> Current network displayed !")
+  return iw, result.stderr
+
 def command_install_ahs_eth(json):
   print("-> Installing Auto Hotspot with internet")
 
@@ -134,6 +145,7 @@ commandAction = {
     constants.COMMAND_HOTSPOT_SSID: command_hotspot_ssid,
     constants.COMMAND_DISPLAY_HOTSPOT_SSID: command_display_hotspot_ssid,
     constants.COMMAND_FORCE: command_force,
+    constants.COMMAND_DISPLAY_CURRENT_NETWORK: command_display_current_network,
     constants.COMMAND_INSTALL_AHS_ETH: command_install_ahs_eth,
     constants.COMMAND_INSTALL_AHS_NO_ETH: command_install_ahs_no_eth,
     constants.COMMAND_INSTALL_HS_ETH: command_install_hs_eth,

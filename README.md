@@ -1,96 +1,80 @@
-# Project Spectrum
+# Project Autohotspot-webapi
 The goal of this project is to connect a rpi with many led matrices and diplay animations.
 It is controllable via wifi connection using a phone or computer. 
 The project has a hotspot feature, if the device is out of range of known networks, it will automaticly create a hotspot.
 The wifi and hotspot settings can be configured via the api.
 Enjoy :)
 
-# Documentation
-1. [Hotspot API](docs/hotspot_api.md)
+# API Controller
+The controller offers only one endpoint to make different actions. Simply send json with the command and parameters.
 
-# Motivation
-The motivation behind this project is too decorate our homes, parties, events, etc.
-Moreover, the second goal is too learn how to make an electronics, how to use wifi, hotspot, complex animations and more.
+### Get http://10.0.0.5/api/hotspot
+1. Display known networks
+```json
+{
+    "command": "display_networks"
+}
+```
+2. Add or update networks
+```json
+{
+    "command": "add_wifi",
+    "ssid": "<name>",
+    "psk": "<password>"
+}
+```
+3. Display hotspot configuration
+```json
+{
+    "command": "display_hotspot_ssid"
+}
+```
+4. Update hotspot configuration
+```json
+{
+    "command": "hotspot_ssid",
+    "ssid": "<name>",
+    "psk": "<password>"
+}
+```
+5. Force device to switch to hotspot or wifi
+```json
+{
+    "command": "force_hs_wifi"
+}
+```
 
-# Technologies
+# AutoHotspot
 
-### RPI
-The web server (flask) and ledstrip connection on the rpi are made with Python3.
+Refer to their website for full documentation and installation. 
 
-##### Hardware
- - Raspberry pi 4B
- - WS2812B Led matrice x 9
- - Electric cables
- - Power supply
+### Autohotspot with No Internet for connected devices
 
-# Features
-- Being able to control the device using a phone or computer and without internet connection
-- Being plug and play as much as possible
-- User will be able to select a bunch of animations
-- User will be able to create an animation playlist with loop or not
-- User will be able to divide the matrice in different section and target those sections individually with animations
+This option create a hotspot where connected devices have no internet connection even if an ethernet cable is connected.
+This has been designed so you can access only the Pi from a Laptop, tablet or phone.
+The default hotspot SSID will be RPiHotspot with a password of 1234567890
+Once a connection to the hotspot has been made you can access the Raspberry Pi via ssh & VNC with
+- ssh pi@10.0.0.5
+- vnc: 10.0.0.5::5900
+- for webservers use http://10.0.0.5/
 
-# How to use
-#### **Commands for Systemd**
- - sudo nano /lib/systemd/system/spectrum.service 
- - sudo chmod +x /lib/systemd/system/spectrum.service
- - sudo systemctl daemon-reload
- - sudo systemctl enable spectrum.service
- - sudo systemctl status spectrum.service
+### Add or Change a WiFi network (SSID)
+If you are using either of the autohotspot setups in hotspot modes and wish to connect to a local WiFi network. You will be unable to scan for any networks as the desktop wifi option will be disabled, shown as red crosses. You can manually add the details to /etc/wpa_supplicant/wpa_supplicant.conf if you know them.
+This option will allow you to scan for local WiFi networks and update the Pi. If you then reboot or use the Force... option ,see below, then it will connect to the new WiFi network.
+This option only works for WiFi networks where only a password is required. 
 
-#### **Command for Cronjobs**
- - sudo crontab -e
- - sudo crontab -l
+### Force to a Hotspot or Force to Network if SSID in Range
+This option is only for the Autohotspot setups.
+If you are at home and connected to your home network but would like to use the hotspot. This option will force the pi to hotspot mode and will ignore your home network until the next reboot. If you use this option again while in hotspot mode it will attempt to connect to a known network. This will go back to the hotspot if no valid WiFi network is found or there is a connection issue.
 
-# Installation
- #### Rpi
- 1. Enable SSH, VNC and SPI in interfaces configuration
- 2. Install AutoHotspot
- 3. Install Git, Python and Pip :
-    - sudo apt install git
-    - sudo apt install python3
-    - sudo apt-get install python3-pip
- 5. Download repo
- 6. Install requirements : sudo pip3 install -r requirements.txt
- 7. Add Spectrum-Update script to crontab
-    - Open terminal and type : sudo crontab -e
-    - Add this line to start server update check on system boot : **@reboot sh /home/pi/Desktop/Spectrum-rpi/Spectrum-Update.sh >/home/pi/Desktop/Spectrum-rpi/Logs/cronlogs 2>&1**
-    - Save, you can confirm using sudo crontab -l
- 8. Add Systemd unit file to systemd deamon
-    - sudo cp Spectrum.service /lib/systemd/system/
-    - sudo chmod +x /lib/systemd/system/Spectrum.service
-    - sudo systemctl daemon-reload
-    - sudo systemctl enable Spectrum.service
-    - sudo systemctl status Spectrum.service
- 9. Reboot
-    - sudo reboot
+### Change the Hotspots SSID and Password
+By default the hotspot ssid is RPiHotSpot with a password of 1234567890. Use this option to change either or both SSID and Password.
+You will be prompted to change both but if you make no entry and press enter the existing setting will be kept.
+The password must be at least 8 characters.
 
-# Credits
-- The awesome AutoHotspot: 
-    - https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/183-raspberry-pi-automatic-hotspot-and-static-hotspot-installer
-    - https://github.com/RaspberryConnect/AutoHotspot-Installer
-- The great rpi-ws281x library
-    - https://github.com/rpi-ws281x/rpi-ws281x-python
-- Thanks to RaspberryPi for their awesome devices
-    - https://www.raspberrypi.org/
+# Credits to the awesome AutoHotspot project: 
+- https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/183-raspberry-pi-automatic-hotspot-and-static-hotspot-installer
+- https://github.com/RaspberryConnect/AutoHotspot-Installer
 
 # Liscense
-MIT
-
-# RoadMap
-*September 2021*
-- [x] - Create Hotspot and Wifi feature
-- [ ] - IMU Integration
-- [ ] - Create the device with the rpi, wires, led matrices and power supply
-- [ ] - Control the leds using python
-- [ ] - Configure Raspbian to autolaunch the script on bootup
-- [ ] - Auto update the server from git
-- [ ] - Create a phone app using Xamarin and learn the basics
-- [ ] - Add handshake when initializing connections to discover servers capabilities (animations, etc)
-- [ ] - Create a dynamic UI for animations
-- [ ] - Create playlist for animations
-- [ ] - Create segments on the leds for animations to target those sections
-- [ ] - Add more animations
-- [ ] - Add different ledstrip type (SK6812)
-
-
+![GitHub](https://img.shields.io/github/license/maxthom/game-boulette-v2?style=flat-square)

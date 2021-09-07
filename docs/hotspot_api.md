@@ -1,4 +1,4 @@
-#### Hostspot 
+# Hostspot 
 
 ## API Controller
 The controller offers only one endpoint to make different actions. Simply send json with the command and parameters.

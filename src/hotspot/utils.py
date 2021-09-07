@@ -1,5 +1,5 @@
 import hotspot.constants as constants
-
+import subprocess
 
 def read_networks_in_wpa_supplicant(in_lines):
   out_lines = []
@@ -49,3 +49,13 @@ def execute_script(command):
   print(result)
   print(err)
   return result, err
+
+def read_ssid_in_hostapd(in_lines):
+  config = {}
+  for line in in_lines:
+    if line.strip().startswith("ssid"):
+      config["ssid"] = line.split("=")[1]
+    elif line.strip().startswith("wpa_passphrase"):
+      config["psk"] = line.split("=")[1]
+
+  return config

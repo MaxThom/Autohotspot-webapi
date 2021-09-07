@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify, render_template
 import hotspot.constants as constants
 import hotspot.utils as utils
-import subprocess
+import os.path
 
 hotspot_bp = Blueprint('hotspot', __name__)
 
@@ -36,6 +36,9 @@ def command_add_wifi(json):
   if len(json["psk"]) < constants.WIFI_PSK_LENGTH:
     return None, f"Password must be at least {constants.WIFI_PSK_LENGTH} characters."
 
+  if not os.path.exists(constants.WPA_SUPPLICANT):
+    return None, f"WAP Supplicant does not exist. Is AutoHostspot installed ? {constants.WPA_SUPPLICANT}"
+
   # Read WPA Supplicant
   with open(constants.WPA_SUPPLICANT, "r") as f:
     in_lines = f.readlines()
@@ -62,7 +65,10 @@ def command_add_wifi(json):
   return networks, None
 
 def command_display_networks(json):
-  print("-> Adding wifi") 
+  print("-> Display networks") 
+
+  if not os.path.exists(constants.WPA_SUPPLICANT):
+    return None, f"WAP Supplicant does not exist. Is AutoHostspot installed ? {constants.WPA_SUPPLICANT}"
 
   # Read WPA Supplicant
   with open(constants.WPA_SUPPLICANT, "r") as f:
@@ -71,6 +77,7 @@ def command_display_networks(json):
   # Discover networks
   networks, out_lines = utils.read_networks_in_wpa_supplicant(in_lines)
 
+  print("-> Networks diplayed !") 
   return networks, None
 
 def command_hotspot_ssid(json):
@@ -82,13 +89,30 @@ def command_hotspot_ssid(json):
   if len(json["psk"]) < constants.WIFI_PSK_LENGTH:
     return None, f"Password must be at least {constants.WIFI_PSK_LENGTH} characters."
 
-  result, err = execute_script(f"{constants.AHP_HOTSPOT_SSID_PATH} {json['ssid']} {json['psk']}")
+  os.chmod(constants.AHP_HOTSPOT_SSID_PATH, 0o755)
+  result, err = utils.execute_script(f"{constants.AHP_HOTSPOT_SSID_PATH} {json['ssid']} {json['psk']}")
   print("-> Hotspot ssid and password set")
   return result, err
 
+def command_display_hotspot_ssid(json):
+  print("-> Display hotspot")
+  if not os.path.exists(constants.HOST_APD):
+    return None, f"Host APD does not exist. Is AutoHostspot installed ? {constants.HOST_APD}"
+  # Read Host APD
+  with open(constants.HOST_APD, "r") as f:
+    in_lines = f.readlines()
+
+  # Look for ssid and psk
+  config = utils.read_ssid_in_hostapd(in_lines)  
+   
+  print(config)
+  print("-> Hotspot displayed !")
+  return config, None
+
 def command_force(json):
   print("-> Forcing hotspot or wifi")  
-  result, err = execute_script(f"{consants.AHP_FORCE_HS_WIFI_PATH}")
+  os.chmod(constants.AHP_FORCE_HS_WIFI_PATH, 0o755)
+  result, err = utils.execute_script(f"{constants.AHP_FORCE_HS_WIFI_PATH}")
   print("-> Hotspot or wifi forced")
   return result, err
 
@@ -108,6 +132,7 @@ commandAction = {
     constants.COMMAND_ADD_WIFI: command_add_wifi,
     constants.COMMAND_DISPLAY_NETWORKS: command_display_networks,
     constants.COMMAND_HOTSPOT_SSID: command_hotspot_ssid,
+    constants.COMMAND_DISPLAY_HOTSPOT_SSID: command_display_hotspot_ssid,
     constants.COMMAND_FORCE: command_force,
     constants.COMMAND_INSTALL_AHS_ETH: command_install_ahs_eth,
     constants.COMMAND_INSTALL_AHS_NO_ETH: command_install_ahs_no_eth,

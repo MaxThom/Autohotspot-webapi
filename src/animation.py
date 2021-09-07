@@ -2,11 +2,11 @@ from rpi_ws281x import Color, PixelStrip, ws
 import time 
 
 # LED strip configuration:
-LED_COUNT = 64         # Number of LED pixels.
+LED_COUNT = 144        # Number of LED pixels.
 LED_PIN = 18           # GPIO pin connected to the pixels (must support PWM!).
 LED_FREQ_HZ = 800000   # LED signal frequency in hertz (usually 800khz)
 LED_DMA = 10           # DMA channel to use for generating signal (try 10)
-LED_BRIGHTNESS = 100   # Set to 0 for darkest and 255 for brightest
+LED_BRIGHTNESS = 50   # Set to 0 for darkest and 255 for brightest
 LED_INVERT = False     # True to invert the signal (when using NPN transistor level shift)
 LED_CHANNEL = 0
 ##LED_STRIP = ws.SK6812_STRIP_RGBW
@@ -19,6 +19,8 @@ def init_animation(logger):
     # Intialize the library (must be called once before other functions).
     strip.begin()
     
+    #luka_animation(strip)
+
     while True:
         # Color wipe animations.
         color_wipe(strip, Color(255, 0, 0))  # Red wipe
@@ -32,3 +34,14 @@ def color_wipe(strip, color, wait_ms=50):
         strip.setPixelColor(i, color)
         strip.show()
         time.sleep(wait_ms / 1000.0)
+
+def luka_animation(strip):
+    strip.setPixelColor(0, Color(170, 0, 170, 0))
+    strip.setPixelColor(1, Color(170, 0, 170, 0))
+    strip.setPixelColor(2, Color(170, 0, 170, 0))
+
+    strip.setPixelColor(4, Color(0, 50, 75, 0))
+    strip.setPixelColor(5, Color(130, 25, 70, 0))
+    strip.setPixelColor(6, Color(10, 255, 70, 200))
+
+    strip.show()

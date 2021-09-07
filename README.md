@@ -6,7 +6,7 @@ The wifi and hotspot settings can be configured via the api.
 Enjoy :)
 
 # Documentation
-1. [Hotspot API](\docs\hotspot_api.md)
+1. [Hotspot API](docs/hotspot_api.md)
 
 # Motivation
 The motivation behind this project is too decorate our homes, parties, events, etc.

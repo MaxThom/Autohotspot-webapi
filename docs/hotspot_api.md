@@ -44,6 +44,19 @@ The controller offers only one endpoint to make different actions. Simply send j
     "command": "display_current_network"
 }
 ```
+7. Display the hostname
+```json
+{
+    "command": "display_hostname"
+}
+```
+8. Update the hostname
+```json
+{
+    "command": "update_hostname",
+    "hostname": "<hostname>"
+}
+```
 
 #
 ## AutoHotspot
